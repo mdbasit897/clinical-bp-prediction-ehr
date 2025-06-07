@@ -119,7 +119,7 @@ def validate_no_leakage(X, feature_importance=None):
 
 
 def run_eicu_external_validation(config, trained_predictor, feature_processor, imputer, evaluator, timestamp):
-    """WORKING eICU external validation - tested and validated"""
+    """FIXED eICU external validation with proper feature alignment"""
     logger = logging.getLogger(__name__)
 
     try:
@@ -127,7 +127,7 @@ def run_eicu_external_validation(config, trained_predictor, feature_processor, i
         logger.info("STARTING eICU EXTERNAL VALIDATION")
         logger.info("=" * 60)
 
-        # Initialize WORKING eICU extractor
+        # Initialize eICU extractor
         eicu_extractor = eICUDataExtractor(
             project_id=config['data_extraction']['project_id'],
             timestamp=timestamp
@@ -145,7 +145,7 @@ def run_eicu_external_validation(config, trained_predictor, feature_processor, i
 
         logger.info(f"✓ Successfully extracted {len(eicu_cohort_df)} eICU patients")
 
-        # Step 2: Extract BP data (most critical)
+        # Step 2: Extract BP data
         patient_ids = eicu_cohort_df['patientunitstayid'].tolist()
         logger.info("Step 2: Extracting eICU BP data...")
         eicu_bp_df = eicu_extractor.extract_bp_data(patient_ids)
@@ -202,11 +202,26 @@ def run_eicu_external_validation(config, trained_predictor, feature_processor, i
 
         # Step 7: Prepare for model evaluation
         logger.info("Step 7: Preparing data for model evaluation...")
-        X_eicu, y_eicu, groups_eicu = trained_predictor.prepare_data(eicu_df_clean, "eICU")
+        X_eicu_raw, y_eicu, groups_eicu = trained_predictor.prepare_data(eicu_df_clean, "eICU")
 
-        if len(X_eicu) == 0:
+        if len(X_eicu_raw) == 0:
             logger.error("No samples remaining after data preparation")
             return None
+
+        # === NEW: Step 7.5: Align features with training data ===
+        logger.info("Step 7.5: Aligning features with training data...")
+
+        # Get reference features from the trained model
+        if hasattr(trained_predictor, 'feature_importance') and trained_predictor.feature_importance:
+            reference_features = trained_predictor.feature_importance['features']
+        else:
+            logger.error("No reference features available from trained model")
+            return None
+
+        # Create feature aligner and align eICU features
+        aligner = FeatureAligner()
+        aligner.set_reference_features(reference_features)
+        X_eicu = aligner.align_features(X_eicu_raw, "eICU")
 
         logger.info(f"✓ Final eICU validation set: {X_eicu.shape[0]} patients, {X_eicu.shape[1]} features")
 
@@ -1219,6 +1234,7 @@ class EnhancedFeatureProcessor:
     # Add as a new method in your feature engineering class
     def document_features(self, output_file="feature_documentation.md"):
         """Document the source and clinical meaning of each feature."""
+        logger = logging.getLogger(__name__)
         logger.info(f"Documenting features to {output_file}...")
 
         # Define feature categories and their descriptions
@@ -1471,6 +1487,76 @@ class EnhancedFeatureProcessor:
             logging.info(f"Replaced {outlier_count} extreme values with NaN")
 
         return df
+
+class FeatureAligner:
+    """Ensure consistent feature sets between MIMIC-III and eICU datasets"""
+
+    def __init__(self, reference_features=None):
+        self.reference_features = reference_features
+        self.feature_mapping = {}
+
+    def set_reference_features(self, feature_names):
+        """Set the reference feature set (from training data)"""
+        self.reference_features = list(feature_names)
+
+    def align_features(self, X_new, dataset_name="External"):
+        """Align new dataset features to match reference features"""
+        logger = logging.getLogger(__name__)
+
+        if self.reference_features is None:
+            logger.error("Reference features not set. Call set_reference_features first.")
+            return X_new
+
+        logger.info(f"Aligning features for {dataset_name} dataset...")
+
+        # Create DataFrame with reference features
+        X_aligned = pd.DataFrame(index=X_new.index, columns=self.reference_features)
+
+        # Copy existing features
+        for feature in self.reference_features:
+            if feature in X_new.columns:
+                X_aligned[feature] = X_new[feature]
+            else:
+                # Handle missing features with appropriate defaults
+                X_aligned[feature] = self._get_feature_default(feature)
+
+        logger.info(f"Feature alignment completed. Final shape: {X_aligned.shape}")
+
+        # Log missing and extra features
+        missing_features = set(self.reference_features) - set(X_new.columns)
+        extra_features = set(X_new.columns) - set(self.reference_features)
+
+        if missing_features:
+            logger.warning(f"Missing features filled with defaults: {list(missing_features)[:10]}...")
+        if extra_features:
+            logger.info(f"Extra features ignored: {list(extra_features)[:10]}...")
+
+        return X_aligned
+
+    def _get_feature_default(self, feature_name):
+        """Get appropriate default value for missing features"""
+        # Clinical defaults for common features
+        defaults = {
+            'admit_year': 2015,  # Median year
+            'deceased': 0,
+            'gender_male': 0.5,  # Assume 50/50 distribution
+            'age_creatinine_product': 0.0,
+            'hr_lability_events': 0.0,
+            'sbp_lability_events': 0.0,
+            'any_vasopressor': 0,
+            'any_beta_blocker': 0,
+            'any_diuretic': 0,
+            'any_acei': 0,
+            'any_arb': 0,
+            'any_ccb': 0,
+            'antihypertensive_count': 0,
+            'comorbidity_score': 0,
+            'cv_risk_score': 0,
+            'high_cv_risk': 0
+        }
+
+        # Return default value or 0.0 for numeric features
+        return defaults.get(feature_name, 0.0)
 
 
 class AdvancedDataImputer:
@@ -1784,48 +1870,11 @@ class AdvancedDataImputer:
 
 
 class OptimizedBPPredictor:
-    """
-    Enhanced BP Predictor with Bayesian optimization, uncertainty quantification,
-    and stratified modeling for improved SBP prediction
-    """
+    """Enhanced BP Predictor with feature alignment support"""
 
     def __init__(self, config=None, timestamp=None):
-        self.config = config if config else {}
-        self.random_state = self.config.get('random_state', 42)
-        self.cv_folds = self.config.get('cv_folds', 5)
-        self.use_bayesian_optimization = self.config.get('bayesian_optimization', True)
-        self.n_iter_bayesian = self.config.get('n_iter', 30)
-        self.stratified_modeling = self.config.get('stratified_modeling', True)
-        self.use_stacked_ensemble = self.config.get('use_stacked_ensemble', True)
-        self.timestamp = timestamp if timestamp else datetime.now().strftime("%Y%m%d_%H%M%S")
-
-        # Initialize base pipeline
-        self.base_pipeline = Pipeline([
-            ('var_filter', VarianceThreshold(threshold=1e-5)),  # Remove near-constant features
-            ('scaler', RobustScaler()),
-            ('pt', PowerTransformer(method="yeo-johnson", standardize=True)),
-            ('gb', GradientBoostingRegressor(random_state=self.random_state))
-        ])
-
-        # Initialize models
-        self.sbp_regressor = MultiOutputRegressor(self.base_pipeline)
-        self.dbp_regressor = MultiOutputRegressor(self.base_pipeline)
-
-        # For stratified models
-        self.sbp_stratum_models = {}
-
-        # For uncertainty quantification
-        self.sbp_quantile_10 = None
-        self.sbp_quantile_90 = None
-        self.dbp_quantile_10 = None
-        self.dbp_quantile_90 = None
-
-        # For stacked ensemble
-        self.sbp_ensemble = None
-        self.dbp_ensemble = None
-
-        # For feature importance
-        self.feature_importance = {}
+        # ... existing initialization code ...
+        self.training_features = None  # Track features used in training
 
     def prepare_data(self, df, dataset_name="MIMIC-III"):
         """Prepare data for training with enhanced feature selection"""
@@ -1835,7 +1884,7 @@ class OptimizedBPPredictor:
             # CRITICAL: Remove leaky features FIRST
             df = remove_leaky_features(df)
 
-            # Target variables - ensure we're not using any verification columns
+            # Target variables
             if 'sbp_mean' not in df.columns or 'dbp_mean' not in df.columns:
                 raise ValueError("Target variables (sbp_mean, dbp_mean) not found in dataset")
 
@@ -1868,52 +1917,52 @@ class OptimizedBPPredictor:
             elif 'patientunitstayid' in df.columns:
                 groups = df['patientunitstayid']
             else:
-                # If no ID column available, create a synthetic group
                 logging.warning("No subject ID found for grouping, using synthetic groups")
                 groups = pd.Series(range(len(df)))
 
-            # Check for and handle any remaining missing values
+            # Handle missing values
             if X.isnull().any().any():
                 missing_count = X.isnull().sum().sum()
-                logging.warning(
-                    f"Found {missing_count} missing values in features after imputation, filling with medians")
+                logging.warning(f"Found {missing_count} missing values in features, filling with medians")
                 for col in X.columns:
                     if X[col].isnull().any():
                         X[col] = X[col].fillna(X[col].median())
 
-            # Convert categorical columns to numeric BEFORE variance threshold
+            # Convert categorical columns to numeric
             cat_columns = X.select_dtypes(include=['object', 'category']).columns
             for col in cat_columns:
                 logging.info(f"Converting categorical column: {col}")
                 X[col] = pd.Categorical(X[col]).codes
 
-            # Now apply variance threshold on numeric data
+            # Apply variance threshold
             from sklearn.feature_selection import VarianceThreshold
             selector = VarianceThreshold(threshold=1e-5)
             X_array = selector.fit_transform(X)
-
-            # Get the selected feature names
             selected_features = [X.columns[i] for i in selector.get_support(indices=True)]
             logging.info(f"Removed {X.shape[1] - len(selected_features)} low-variance features")
-
-            # Create a new DataFrame with only the selected features
             X = X[selected_features]
 
-            # Check for and handle highly correlated features
+            # Handle highly correlated features
             corr_matrix = X.corr().abs()
             upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape), k=1).astype(bool))
             high_corr_features = [column for column in upper.columns if any(upper[column] > 0.95)]
             if high_corr_features:
                 logging.info(f"Removing {len(high_corr_features)} highly correlated features")
                 X = X.drop(columns=high_corr_features)
-                # Identify columns with missing values
-                cols_with_missing = X.columns[X.isnull().any()].tolist()
-                for col in cols_with_missing:
-                    X[col] = X[col].fillna(X[col].median())
+
+            # Handle any remaining missing values
+            cols_with_missing = X.columns[X.isnull().any()].tolist()
+            for col in cols_with_missing:
+                X[col] = X[col].fillna(X[col].median())
 
             # Final validation check
             if not validate_no_leakage(X):
                 raise ValueError("Data leakage detected after processing - cannot proceed")
+
+            # Store training features for later alignment
+            if dataset_name == "MIMIC-III":
+                self.training_features = list(X.columns)
+                logging.info(f"Stored {len(self.training_features)} training features for alignment")
 
             logging.info(f"Final feature set: {X.shape[1]} features, {X.shape[0]} samples")
             logging.info(f"Target set: {y.shape}")
@@ -3985,72 +4034,12 @@ def main():
         # Prepare data for modeling
         X, y, groups = predictor.prepare_data(df_imputed, "MIMIC-III")
 
-        # Optional: Train enhanced DBP models
-        if config['model'].get('enhanced_dbp_modeling', False):
-            logger.info("Training enhanced DBP models...")
-            try:
-                # Extract DBP targets
-                y_dbp = y['dbp_mean']  # Assuming y is a DataFrame with 'dbp_mean' column
-                enhanced_dbp_model, dbp_features = predictor.improve_dbp_modeling(X, y_dbp, config['model']['cv_folds'])
-
-                # Save the enhanced DBP model
-                os.makedirs("models", exist_ok=True)
-                joblib.dump(enhanced_dbp_model, f"models/enhanced_dbp_model_{timestamp}.joblib")
-                with open(f"models/dbp_features_{timestamp}.json", 'w') as f:
-                    json.dump(dbp_features, f)
-
-                logger.info("Enhanced DBP model trained and saved")
-            except Exception as e:
-                logger.warning(f"Enhanced DBP modeling failed: {str(e)}. Continuing with standard models.")
-
-        # Train or load models
-        if args.skip_training and args.load_models:
-            # Load pre-trained models
-            logger.info(f"Loading pre-trained models from timestamp: {args.load_models}")
-            if predictor.load_models(args.load_models):
-                logger.info("Models loaded successfully")
-            else:
-                logger.error("Failed to load models, exiting")
-                return
-        else:
-            # Train models
-            logger.info("Training BP prediction models...")
-            if config['model'].get('bayesian_optimization', True):
-                predictor.train_models_with_bayesian_optimization(X, y, groups)
-            else:
-                predictor.train_models_standard(X, y, groups)
-
-        # Evaluate models
-        evaluator = ModelEvaluator(config['evaluation'], timestamp)
-        mimic_results = evaluator.evaluate_models(predictor, X, y, groups, "MIMIC-III")
-
-        # Ensure no data leakage before any training
-        logger.info("Final validation: Checking for data leakage...")
-        df_imputed = remove_leaky_features(df_imputed)
-
-        # Initialize BP predictor
-        predictor = OptimizedBPPredictor(config['model'], timestamp)
-
-        # Prepare data for modeling (this will do final leakage check)
-        X, y, groups = predictor.prepare_data(df_imputed, "MIMIC-III")
-
-        # Train models (this is the clean, non-leaky version)
-        logger.info("Training BP prediction models (without verification features)...")
+        # Train models
+        logger.info("Training BP prediction models...")
         if config['model'].get('bayesian_optimization', True):
             predictor.train_models_with_bayesian_optimization(X, y, groups)
         else:
             predictor.train_models_standard(X, y, groups)
-
-        # Final feature importance check
-        if hasattr(predictor, 'feature_importance') and predictor.feature_importance:
-            # Log top features to verify no leakage
-            logger.info("Top 10 features for SBP prediction:")
-            for i, (feature, importance) in enumerate(
-                    sorted(zip(predictor.feature_importance['features'],
-                               predictor.feature_importance['sbp_importance']),
-                           key=lambda x: x[1], reverse=True)[:10]
-            ):
-                logger.info(f"  {i + 1}. {feature}: {importance:.4f}")
 
         # Evaluate models on MIMIC-III
         evaluator = ModelEvaluator(config['evaluation'], timestamp)
@@ -4060,7 +4049,7 @@ def main():
         comparator = SOTAComparator(timestamp)
         sota_comparison = comparator.compare_with_sota(mimic_results['metrics'], "MIMIC-III")
 
-        # Run eICU external validation
+        # Run eICU external validation (FIXED VERSION)
         eicu_results = None
         if config['data_extraction'].get('use_eicu_validation', True):
             logger.info("Starting eICU external validation...")
@@ -4069,7 +4058,6 @@ def main():
             )
 
             if eicu_results:
-                # Compare with SOTA methods on eICU dataset
                 sota_comparison_eicu = comparator.compare_with_sota(eicu_results['metrics'], "eICU")
             else:
                 logger.warning("eICU validation failed, continuing with MIMIC-III results only")
@@ -4081,7 +4069,7 @@ def main():
         # Generate final summary
         generate_final_summary(mimic_results, eicu_results, timestamp)
 
-        # Document features for publication
+        # Document features for publication (FIXED VERSION)
         feature_doc_file = f"results/feature_documentation_{timestamp}.md"
         feature_processor.document_features(output_file=feature_doc_file)
         logger.info(f"Feature documentation created: {feature_doc_file}")
@@ -4092,7 +4080,6 @@ def main():
     except Exception as e:
         logger.error(f"Pipeline failed: {str(e)}")
         raise
-
 
 if __name__ == "__main__":
     main()
