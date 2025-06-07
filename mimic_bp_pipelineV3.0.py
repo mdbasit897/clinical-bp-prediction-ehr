@@ -404,7 +404,8 @@ DEFAULT_CONFIG = {
         'stratified_modeling': True,
         'bayesian_optimization': True,
         'n_iter': 30,
-        'use_stacked_ensemble': True
+        'use_stacked_ensemble': True,
+        'enhanced_dbp_modeling': False
     },
     'evaluation': {
         'save_figures': True,
@@ -3727,18 +3728,6 @@ class SOTAComparator:
             "This study"
         ))
 
-        # Add around line 3520 in the main() function, before the regular model evaluation
-        logger.info("Training enhanced DBP models...")
-        y_dbp = y[:, 1]  # Assuming y[:, 1] contains DBP values
-        enhanced_dbp_model, dbp_features = predictor.improve_dbp_modeling(X, y_dbp, config['model']['cv_folds'])
-
-        # Save the enhanced DBP model
-        joblib.dump(enhanced_dbp_model, f"models/enhanced_dbp_model_{timestamp}.joblib")
-        with open(f"models/dbp_features_{timestamp}.json", 'w') as f:
-            json.dump(dbp_features, f)
-
-        logger.info("Enhanced DBP model trained and saved")
-
         # Provide interpretation for publication
         logging.info("\nInterpretation for Publication:")
 
@@ -3995,6 +3984,24 @@ def main():
 
         # Prepare data for modeling
         X, y, groups = predictor.prepare_data(df_imputed, "MIMIC-III")
+
+        # Optional: Train enhanced DBP models
+        if config['model'].get('enhanced_dbp_modeling', False):
+            logger.info("Training enhanced DBP models...")
+            try:
+                # Extract DBP targets
+                y_dbp = y['dbp_mean']  # Assuming y is a DataFrame with 'dbp_mean' column
+                enhanced_dbp_model, dbp_features = predictor.improve_dbp_modeling(X, y_dbp, config['model']['cv_folds'])
+
+                # Save the enhanced DBP model
+                os.makedirs("models", exist_ok=True)
+                joblib.dump(enhanced_dbp_model, f"models/enhanced_dbp_model_{timestamp}.joblib")
+                with open(f"models/dbp_features_{timestamp}.json", 'w') as f:
+                    json.dump(dbp_features, f)
+
+                logger.info("Enhanced DBP model trained and saved")
+            except Exception as e:
+                logger.warning(f"Enhanced DBP modeling failed: {str(e)}. Continuing with standard models.")
 
         # Train or load models
         if args.skip_training and args.load_models:
