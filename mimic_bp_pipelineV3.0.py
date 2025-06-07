@@ -1870,11 +1870,51 @@ class AdvancedDataImputer:
 
 
 class OptimizedBPPredictor:
-    """Enhanced BP Predictor with feature alignment support"""
+    """
+    Enhanced BP Predictor with Bayesian optimization, uncertainty quantification,
+    and stratified modeling for improved SBP prediction
+    """
 
     def __init__(self, config=None, timestamp=None):
-        # ... existing initialization code ...
-        self.training_features = None  # Track features used in training
+        self.config = config if config else {}
+        self.random_state = self.config.get('random_state', 42)
+        self.cv_folds = self.config.get('cv_folds', 5)  # FIX: This was missing!
+        self.use_bayesian_optimization = self.config.get('bayesian_optimization', True)
+        self.n_iter_bayesian = self.config.get('n_iter', 30)
+        self.stratified_modeling = self.config.get('stratified_modeling', True)
+        self.use_stacked_ensemble = self.config.get('use_stacked_ensemble', True)
+        self.timestamp = timestamp if timestamp else datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        # Initialize base pipeline
+        self.base_pipeline = Pipeline([
+            ('var_filter', VarianceThreshold(threshold=1e-5)),  # Remove near-constant features
+            ('scaler', RobustScaler()),
+            ('pt', PowerTransformer(method="yeo-johnson", standardize=True)),
+            ('gb', GradientBoostingRegressor(random_state=self.random_state))
+        ])
+
+        # Initialize models
+        self.sbp_regressor = MultiOutputRegressor(self.base_pipeline)
+        self.dbp_regressor = MultiOutputRegressor(self.base_pipeline)
+
+        # For stratified models
+        self.sbp_stratum_models = {}
+
+        # For uncertainty quantification
+        self.sbp_quantile_10 = None
+        self.sbp_quantile_90 = None
+        self.dbp_quantile_10 = None
+        self.dbp_quantile_90 = None
+
+        # For stacked ensemble
+        self.sbp_ensemble = None
+        self.dbp_ensemble = None
+
+        # For feature importance
+        self.feature_importance = {}
+
+        # NEW: Track features used in training for alignment
+        self.training_features = None
 
     def prepare_data(self, df, dataset_name="MIMIC-III"):
         """Prepare data for training with enhanced feature selection"""
