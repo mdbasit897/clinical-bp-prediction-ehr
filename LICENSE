@@ -1,0 +1,55 @@
+MIT License
+
+Copyright (c) 2024 Md Basit Azam and Contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+================================================================================
+
+ADDITIONAL TERMS FOR CLINICAL RESEARCH USE:
+
+This software is intended for research purposes only. Clinical applications
+require additional validation, regulatory approval, and institutional oversight.
+
+
+CLINICAL DISCLAIMER:
+This software is provided for research and educational purposes. It is not
+intended for clinical decision-making without appropriate validation,
+regulatory approval, and clinical oversight. Healthcare providers should not
+rely solely on algorithmic predictions for patient care decisions.
+
+RESEARCH ETHICS:
+Users are responsible for obtaining appropriate institutional review board
+(IRB) approval and ethics committee clearance for their research projects.
+This software should only be used in compliance with applicable laws,
+regulations, and institutional policies.
+
+PUBLICATION AND CITATION:
+If you use this software in your research, please cite the original paper
+and acknowledge the data sources (MIMIC-III, eICU) as required by their
+respective data use agreements.
+
+LIABILITY LIMITATION:
+The authors and contributors shall not be liable for any clinical decisions,
+patient outcomes, or other consequences resulting from the use of this
+software. Users assume full responsibility for validation and clinical
+implementation.
+
+For questions regarding licensing or clinical applications, please contact
+the authors at mdbasit@tezu.ernet.in.
