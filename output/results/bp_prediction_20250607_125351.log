@@ -1,0 +1,736 @@
+2025-06-07 12:53:51,973 - INFO - Logging initialized at INFO level. Log file: results/bp_prediction_20250607_125351.log
+2025-06-07 12:53:51,979 - INFO - Starting Enhanced MIMIC-III BP Prediction Pipeline...
+2025-06-07 12:53:51,979 - INFO - Configuration: {'data_extraction': {'project_id': 'd1namo-ecg-processing', 'max_patients': 1000, 'use_eicu_validation': True}, 'feature_engineering': {'extreme_limits': {'hr_mean': [20, 250], 'sbp_mean': [40, 300], 'dbp_mean': [15, 200], 'temp_mean': [80, 110], 'spo2_mean': [50, 100]}, 'create_temporal_features': True, 'create_interaction_features': True}, 'imputation': {'method': 'iterative', 'knn_neighbors': 5, 'iterative_max_iter': 50, 'perform_sensitivity_analysis': True}, 'model': {'random_state': 42, 'cv_folds': 5, 'stratified_modeling': True, 'bayesian_optimization': True, 'n_iter': 30, 'use_stacked_ensemble': True, 'enhanced_dbp_modeling': False}, 'evaluation': {'save_figures': True, 'shap_analysis': True, 'uncertainty_quantification': True, 'clinical_utility_metrics': True, 'workflow_simulation': True}}
+2025-06-07 12:53:54,318 - INFO - BigQuery client initialized for project: d1namo-ecg-processing
+2025-06-07 12:53:54,318 - INFO - Extracting patient cohort...
+2025-06-07 12:53:55,364 - INFO - Extracted 1000 patients for analysis
+2025-06-07 12:53:55,365 - INFO - Extracting BP measurements...
+2025-06-07 12:53:56,290 - INFO - Extracting vital signs features...
+2025-06-07 12:53:57,044 - INFO - Extracting laboratory features...
+2025-06-07 12:53:57,878 - INFO - Extracting medication features...
+2025-06-07 12:53:58,689 - INFO - Extracting temporal dynamics features...
+2025-06-07 12:53:59,537 - INFO - Extracted temporal features: (894, 16)
+2025-06-07 12:53:59,538 - INFO - Extracting comorbidity features...
+2025-06-07 12:54:00,332 - INFO - Extracted comorbidity features: (1000, 10)
+2025-06-07 12:54:00,332 - INFO - Processing and combining features for MIMIC-III...
+2025-06-07 12:54:00,418 - INFO - Replacing 853 extreme values in temp_mean
+2025-06-07 12:54:00,420 - INFO - Replaced 853 extreme values with NaN
+2025-06-07 12:54:00,695 - INFO - Final MIMIC-III dataset shape: (889, 128)
+2025-06-07 12:54:00,702 - INFO - Handling missing values in 22 columns
+2025-06-07 12:54:00,702 - INFO -   - language: 69.6% missing
+2025-06-07 12:54:00,702 - INFO -   - rr_std: 0.1% missing
+2025-06-07 12:54:00,702 - INFO -   - temp_mean: 96.0% missing
+2025-06-07 12:54:00,702 - INFO -   - sodium_mean: 50.2% missing
+2025-06-07 12:54:00,702 - INFO -   - potassium_mean: 36.6% missing
+2025-06-07 12:54:00,702 - INFO -   - lactate_mean: 37.0% missing
+2025-06-07 12:54:00,702 - INFO -   - troponin_mean: 100.0% missing
+2025-06-07 12:54:00,703 - INFO -   - crp_mean: 94.3% missing
+2025-06-07 12:54:00,703 - INFO -   - ph_mean: 19.2% missing
+2025-06-07 12:54:00,703 - INFO -   - pco2_mean: 20.9% missing
+2025-06-07 12:54:00,703 - INFO -   - po2_mean: 20.9% missing
+2025-06-07 12:54:00,703 - INFO -   - alp_mean: 32.6% missing
+2025-06-07 12:54:00,703 - INFO -   - ast_mean: 31.4% missing
+2025-06-07 12:54:00,703 - INFO -   - alt_mean: 31.2% missing
+2025-06-07 12:54:00,703 - INFO -   - hr_sbp_corr: 100.0% missing
+2025-06-07 12:54:00,703 - INFO -   - rr_sbp_corr: 100.0% missing
+2025-06-07 12:54:00,703 - INFO -   - spo2_sbp_corr: 100.0% missing
+2025-06-07 12:54:00,703 - INFO -   - vasopressor_lactate_interaction: 37.0% missing
+2025-06-07 12:54:00,704 - INFO -   - lactate_mean_squared: 37.0% missing
+2025-06-07 12:54:00,704 - INFO -   - lactate_mean_sqrt: 37.0% missing
+2025-06-07 12:54:00,704 - INFO -   - lactate_mean_log: 37.0% missing
+2025-06-07 12:54:00,704 - INFO -   - perfusion_index: 37.0% missing
+2025-06-07 12:54:04,002 - INFO - Performing multivariate imputation with IterativeImputer (MICE)
+2025-06-07 12:54:04,010 - INFO - Using median imputation for 6 high-missingness columns
+2025-06-07 12:54:10,972 - INFO - Performing KNN imputation
+2025-06-07 12:54:10,979 - INFO - Using median imputation for 6 high-missingness columns
+2025-06-07 12:54:11,485 - INFO - Performing sensitivity analysis on imputation methods
+2025-06-07 12:54:13,587 - INFO - Imputation method comparison saved to imputation_stats_MIMIC-III_20250607_125351.csv
+2025-06-07 12:54:13,587 - INFO - Imputation sensitivity analysis summary:
+2025-06-07 12:54:13,587 - INFO -   Mean difference between methods: 0.76%
+2025-06-07 12:54:13,587 - INFO -   Maximum difference between methods: 1.58%
+2025-06-07 12:54:13,588 - INFO - Imputation methods produce similar results (all differences < 10%). Proceeding with MICE imputation.
+2025-06-07 12:54:13,588 - INFO - Preparing MIMIC-III data for model training...
+2025-06-07 12:54:13,588 - INFO - Removing leaky verification features from dataset
+2025-06-07 12:54:13,589 - WARNING - REMOVING 7 LEAKY FEATURES: sbp_mean_verify, sbp_std_verify, hr_sbp_corr, rr_sbp_corr, spo2_sbp_corr, creatinine_sbp_ratio, hrv_sbp_interaction
+2025-06-07 12:54:13,604 - INFO - ✓ No data leakage detected - dataset is clean
+2025-06-07 12:54:13,608 - WARNING - Found 889 missing values in features, filling with medians
+2025-06-07 12:54:13,625 - INFO - Converting categorical column: first_careunit
+2025-06-07 12:54:13,627 - INFO - Converting categorical column: insurance
+2025-06-07 12:54:13,628 - INFO - Converting categorical column: language
+2025-06-07 12:54:13,629 - INFO - Converting categorical column: ethnicity
+2025-06-07 12:54:13,630 - INFO - Converting categorical column: sbp_category
+2025-06-07 12:54:13,639 - INFO - Removed 17 low-variance features
+2025-06-07 12:54:13,681 - INFO - Removing 17 highly correlated features
+2025-06-07 12:54:13,685 - INFO - ✓ No data leakage detected - dataset is clean
+2025-06-07 12:54:13,685 - INFO - Stored 74 training features for alignment
+2025-06-07 12:54:13,685 - INFO - Final feature set: 74 features, 889 samples
+2025-06-07 12:54:13,685 - INFO - Target set: (889, 2)
+2025-06-07 12:54:13,686 - INFO - Training BP prediction models...
+2025-06-07 12:54:13,686 - INFO - Training models using Bayesian optimization...
+2025-06-07 12:54:13,695 - INFO - Training SBP model with Bayesian optimization...
+2025-06-07 12:58:27,768 - INFO - Best SBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.009674972997110697), ('estimator__gb__max_depth', 10), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 5), ('estimator__gb__n_estimators', 374), ('estimator__gb__subsample', 0.5)])
+2025-06-07 12:58:27,768 - INFO - Best SBP score: -5.7781
+2025-06-07 12:58:27,770 - INFO - Training quantile regressors for SBP uncertainty estimation
+2025-06-07 12:58:28,608 - INFO - Training DBP model with Bayesian optimization...
+2025-06-07 13:01:11,332 - INFO - Best DBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.030599865756453907), ('estimator__gb__max_depth', 3), ('estimator__gb__max_features', 'log2'), ('estimator__gb__min_samples_split', 2), ('estimator__gb__n_estimators', 500), ('estimator__gb__subsample', 0.5)])
+2025-06-07 13:01:11,332 - INFO - Best DBP score: -6.9281
+2025-06-07 13:01:11,334 - INFO - Training quantile regressors for DBP uncertainty estimation
+2025-06-07 13:01:12,179 - INFO - 
+Top Features for BP Prediction:
+2025-06-07 13:01:12,179 - INFO - 
+Top 10 Features for SBP Prediction:
+2025-06-07 13:01:12,180 - INFO -   sbp_category: 0.6434
+2025-06-07 13:01:12,180 - INFO -   sbp_prehypertension: 0.0913
+2025-06-07 13:01:12,181 - INFO -   sbp_std: 0.0238
+2025-06-07 13:01:12,181 - INFO -   sbp_hypotension: 0.0090
+2025-06-07 13:01:12,181 - INFO -   sbp_stage1_htn: 0.0088
+2025-06-07 13:01:12,181 - INFO -   dbp_std: 0.0088
+2025-06-07 13:01:12,181 - INFO -   bun_creatinine_ratio: 0.0074
+2025-06-07 13:01:12,182 - INFO -   po2_mean: 0.0074
+2025-06-07 13:01:12,182 - INFO -   rr_mean: 0.0073
+2025-06-07 13:01:12,182 - INFO -   sodium_mean: 0.0072
+2025-06-07 13:01:12,182 - INFO - 
+Top 10 Features for DBP Prediction:
+2025-06-07 13:01:12,183 - INFO -   dbp_std: 0.0920
+2025-06-07 13:01:12,183 - INFO -   sbp_category: 0.0820
+2025-06-07 13:01:12,183 - INFO -   age: 0.0724
+2025-06-07 13:01:12,183 - INFO -   sbp_stage2_htn: 0.0459
+2025-06-07 13:01:12,184 - INFO -   sbp_normal: 0.0434
+2025-06-07 13:01:12,184 - INFO -   bun_creatinine_ratio: 0.0356
+2025-06-07 13:01:12,184 - INFO -   hemoglobin_mean: 0.0353
+2025-06-07 13:01:12,184 - INFO -   sbp_std: 0.0266
+2025-06-07 13:01:12,184 - INFO -   sbp_stage1_htn: 0.0230
+2025-06-07 13:01:12,185 - INFO -   hr_mean: 0.0225
+2025-06-07 13:01:12,185 - INFO - Training stacked ensemble models...
+2025-06-07 13:01:12,194 - INFO - Training SBP ensemble with Bayesian optimization...
+2025-06-07 13:06:47,205 - INFO - Best SBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.114012258603381), ('gb__gb__max_depth', 4), ('gb__gb__n_estimators', 200), ('rf__rf__max_depth', 9), ('rf__rf__n_estimators', 181), ('xgb__xgb__learning_rate', 0.013310362066695544), ('xgb__xgb__n_estimators', 239)])
+2025-06-07 13:06:47,205 - INFO - Best SBP ensemble score: -5.7449
+2025-06-07 13:06:47,206 - INFO - Training DBP ensemble with Bayesian optimization...
+2025-06-07 13:12:16,156 - INFO - Best DBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.114012258603381), ('gb__gb__max_depth', 4), ('gb__gb__n_estimators', 200), ('rf__rf__max_depth', 9), ('rf__rf__n_estimators', 181), ('xgb__xgb__learning_rate', 0.013310362066695544), ('xgb__xgb__n_estimators', 239)])
+2025-06-07 13:12:16,156 - INFO - Best DBP ensemble score: -7.0973
+2025-06-07 13:12:16,157 - INFO - Training stratified models for different BP ranges...
+2025-06-07 13:12:16,157 - INFO -   Hypotension: 8 samples
+2025-06-07 13:12:16,157 - INFO -   Normal: 461 samples
+2025-06-07 13:12:16,157 - INFO -   Prehypertension: 302 samples
+2025-06-07 13:12:16,157 - INFO -   Hypertension: 118 samples
+2025-06-07 13:12:16,157 - INFO - Training specialized model for Normal BP range...
+2025-06-07 13:12:22,151 - INFO -   Normal model - Best RMSE: 6.02 mmHg
+2025-06-07 13:12:22,151 - INFO - Training specialized model for Prehypertension BP range...
+2025-06-07 13:12:25,634 - INFO -   Prehypertension model - Best RMSE: 5.71 mmHg
+2025-06-07 13:12:25,635 - INFO - Training specialized model for Hypertension BP range...
+2025-06-07 13:12:29,403 - INFO -   Hypertension model - Best RMSE: 5.24 mmHg
+2025-06-07 13:12:29,404 - INFO - Stratified model training completed.
+2025-06-07 13:12:29,878 - INFO - All models saved to models/
+2025-06-07 13:12:29,880 - INFO - Evaluating models on MIMIC-III dataset...
+2025-06-07 13:12:29,888 - INFO - Evaluating on fold 1/5
+2025-06-07 13:12:29,892 - INFO - Training models using Bayesian optimization...
+2025-06-07 13:12:29,901 - INFO - Training SBP model with Bayesian optimization...
+2025-06-07 13:15:56,217 - INFO - Best SBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.009482819493222107), ('estimator__gb__max_depth', 10), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 2), ('estimator__gb__n_estimators', 500), ('estimator__gb__subsample', 0.5)])
+2025-06-07 13:15:56,218 - INFO - Best SBP score: -5.8453
+2025-06-07 13:15:56,219 - INFO - Training quantile regressors for SBP uncertainty estimation
+2025-06-07 13:15:56,931 - INFO - Training DBP model with Bayesian optimization...
+2025-06-07 13:18:29,103 - INFO - Best DBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.01227355248974141), ('estimator__gb__max_depth', 3), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 2), ('estimator__gb__n_estimators', 489), ('estimator__gb__subsample', 0.5)])
+2025-06-07 13:18:29,104 - INFO - Best DBP score: -6.7365
+2025-06-07 13:18:29,105 - INFO - Training quantile regressors for DBP uncertainty estimation
+2025-06-07 13:18:29,820 - INFO - 
+Top Features for BP Prediction:
+2025-06-07 13:18:29,820 - INFO - 
+Top 10 Features for SBP Prediction:
+2025-06-07 13:18:29,821 - INFO -   sbp_category: 0.6489
+2025-06-07 13:18:29,821 - INFO -   sbp_prehypertension: 0.0766
+2025-06-07 13:18:29,822 - INFO -   sbp_std: 0.0225
+2025-06-07 13:18:29,822 - INFO -   dbp_std: 0.0087
+2025-06-07 13:18:29,822 - INFO -   sbp_stage2_htn: 0.0081
+2025-06-07 13:18:29,822 - INFO -   sodium_mean: 0.0080
+2025-06-07 13:18:29,822 - INFO -   sbp_hypotension: 0.0079
+2025-06-07 13:18:29,823 - INFO -   po2_mean: 0.0079
+2025-06-07 13:18:29,823 - INFO -   rr_mean: 0.0076
+2025-06-07 13:18:29,823 - INFO -   sbp_stage1_htn: 0.0075
+2025-06-07 13:18:29,823 - INFO - 
+Top 10 Features for DBP Prediction:
+2025-06-07 13:18:29,824 - INFO -   sbp_category: 0.2055
+2025-06-07 13:18:29,824 - INFO -   age: 0.1457
+2025-06-07 13:18:29,824 - INFO -   dbp_std: 0.1090
+2025-06-07 13:18:29,825 - INFO -   hemoglobin_mean: 0.0506
+2025-06-07 13:18:29,825 - INFO -   hr_mean: 0.0365
+2025-06-07 13:18:29,825 - INFO -   bun_mean: 0.0249
+2025-06-07 13:18:29,825 - INFO -   sbp_stage2_htn: 0.0229
+2025-06-07 13:18:29,825 - INFO -   ethnicity: 0.0224
+2025-06-07 13:18:29,826 - INFO -   bun_creatinine_ratio: 0.0208
+2025-06-07 13:18:29,826 - INFO -   icu_los_hours: 0.0174
+2025-06-07 13:18:29,826 - INFO - Training stacked ensemble models...
+2025-06-07 13:18:29,834 - INFO - Training SBP ensemble with Bayesian optimization...
+2025-06-07 13:23:06,588 - INFO - Best SBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.03416312199509111), ('gb__gb__max_depth', 6), ('gb__gb__n_estimators', 283), ('rf__rf__max_depth', 5), ('rf__rf__n_estimators', 218), ('xgb__xgb__learning_rate', 0.034576478730387106), ('xgb__xgb__n_estimators', 138)])
+2025-06-07 13:23:06,588 - INFO - Best SBP ensemble score: -5.8525
+2025-06-07 13:23:06,588 - INFO - Training DBP ensemble with Bayesian optimization...
+2025-06-07 13:27:33,342 - INFO - Best DBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.03790883530488498), ('gb__gb__max_depth', 7), ('gb__gb__n_estimators', 76), ('rf__rf__max_depth', 6), ('rf__rf__n_estimators', 97), ('xgb__xgb__learning_rate', 0.0389253225769953), ('xgb__xgb__n_estimators', 89)])
+2025-06-07 13:27:33,342 - INFO - Best DBP ensemble score: -6.9325
+2025-06-07 13:27:33,342 - INFO - Training stratified models for different BP ranges...
+2025-06-07 13:27:33,343 - INFO -   Hypotension: 6 samples
+2025-06-07 13:27:33,343 - INFO -   Normal: 362 samples
+2025-06-07 13:27:33,343 - INFO -   Prehypertension: 249 samples
+2025-06-07 13:27:33,343 - INFO -   Hypertension: 94 samples
+2025-06-07 13:27:33,343 - INFO - Training specialized model for Normal BP range...
+2025-06-07 13:27:39,456 - INFO -   Normal model - Best RMSE: 6.06 mmHg
+2025-06-07 13:27:39,457 - INFO - Training specialized model for Prehypertension BP range...
+2025-06-07 13:27:42,513 - INFO -   Prehypertension model - Best RMSE: 5.77 mmHg
+2025-06-07 13:27:42,514 - INFO - Training specialized model for Hypertension BP range...
+2025-06-07 13:27:45,831 - INFO -   Hypertension model - Best RMSE: 5.30 mmHg
+2025-06-07 13:27:45,833 - INFO - Stratified model training completed.
+2025-06-07 13:27:46,300 - INFO - All models saved to models/
+2025-06-07 13:27:48,314 - INFO - Used specialized models for 178 out of 178 predictions
+2025-06-07 13:27:48,404 - INFO - Evaluating on fold 2/5
+2025-06-07 13:27:48,406 - INFO - Training models using Bayesian optimization...
+2025-06-07 13:27:48,415 - INFO - Training SBP model with Bayesian optimization...
+2025-06-07 13:30:27,190 - INFO - Best SBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.009508446634180906), ('estimator__gb__max_depth', 8), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 7), ('estimator__gb__n_estimators', 353), ('estimator__gb__subsample', 0.6740458673885841)])
+2025-06-07 13:30:27,191 - INFO - Best SBP score: -5.6693
+2025-06-07 13:30:27,193 - INFO - Training quantile regressors for SBP uncertainty estimation
+2025-06-07 13:30:27,910 - INFO - Training DBP model with Bayesian optimization...
+2025-06-07 13:33:37,195 - INFO - Best DBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.009148120660168338), ('estimator__gb__max_depth', 10), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 5), ('estimator__gb__n_estimators', 366), ('estimator__gb__subsample', 0.6993409625740352)])
+2025-06-07 13:33:37,196 - INFO - Best DBP score: -7.3338
+2025-06-07 13:33:37,197 - INFO - Training quantile regressors for DBP uncertainty estimation
+2025-06-07 13:33:37,916 - INFO - 
+Top Features for BP Prediction:
+2025-06-07 13:33:37,916 - INFO - 
+Top 10 Features for SBP Prediction:
+2025-06-07 13:33:37,917 - INFO -   sbp_category: 0.6934
+2025-06-07 13:33:37,917 - INFO -   sbp_prehypertension: 0.0895
+2025-06-07 13:33:37,917 - INFO -   sbp_std: 0.0234
+2025-06-07 13:33:37,917 - INFO -   dbp_std: 0.0080
+2025-06-07 13:33:37,918 - INFO -   sbp_hypotension: 0.0075
+2025-06-07 13:33:37,918 - INFO -   sbp_stage2_htn: 0.0072
+2025-06-07 13:33:37,918 - INFO -   sbp_stage1_htn: 0.0070
+2025-06-07 13:33:37,918 - INFO -   rr_mean: 0.0061
+2025-06-07 13:33:37,918 - INFO -   po2_mean: 0.0060
+2025-06-07 13:33:37,919 - INFO -   spo2_mean: 0.0059
+2025-06-07 13:33:37,919 - INFO - 
+Top 10 Features for DBP Prediction:
+2025-06-07 13:33:37,919 - INFO -   sbp_category: 0.1879
+2025-06-07 13:33:37,920 - INFO -   age: 0.1378
+2025-06-07 13:33:37,920 - INFO -   dbp_std: 0.0739
+2025-06-07 13:33:37,920 - INFO -   bun_creatinine_ratio: 0.0463
+2025-06-07 13:33:37,920 - INFO -   hemoglobin_mean: 0.0361
+2025-06-07 13:33:37,921 - INFO -   age_creatinine_product: 0.0269
+2025-06-07 13:33:37,921 - INFO -   sbp_std: 0.0233
+2025-06-07 13:33:37,921 - INFO -   hr_mean: 0.0189
+2025-06-07 13:33:37,921 - INFO -   gcs_mean: 0.0170
+2025-06-07 13:33:37,921 - INFO -   wbc_mean: 0.0162
+2025-06-07 13:33:37,921 - INFO - Training stacked ensemble models...
+2025-06-07 13:33:37,930 - INFO - Training SBP ensemble with Bayesian optimization...
+2025-06-07 13:38:13,309 - INFO - Best SBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.114012258603381), ('gb__gb__max_depth', 4), ('gb__gb__n_estimators', 200), ('rf__rf__max_depth', 9), ('rf__rf__n_estimators', 181), ('xgb__xgb__learning_rate', 0.013310362066695544), ('xgb__xgb__n_estimators', 239)])
+2025-06-07 13:38:13,309 - INFO - Best SBP ensemble score: -5.6391
+2025-06-07 13:38:13,309 - INFO - Training DBP ensemble with Bayesian optimization...
+2025-06-07 13:42:49,046 - INFO - Best DBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.10970919052074331), ('gb__gb__max_depth', 5), ('gb__gb__n_estimators', 182), ('rf__rf__max_depth', 8), ('rf__rf__n_estimators', 276), ('xgb__xgb__learning_rate', 0.08567991667860926), ('xgb__xgb__n_estimators', 156)])
+2025-06-07 13:42:49,046 - INFO - Best DBP ensemble score: -7.3863
+2025-06-07 13:42:49,046 - INFO - Training stratified models for different BP ranges...
+2025-06-07 13:42:49,047 - INFO -   Hypotension: 6 samples
+2025-06-07 13:42:49,047 - INFO -   Normal: 375 samples
+2025-06-07 13:42:49,047 - INFO -   Prehypertension: 235 samples
+2025-06-07 13:42:49,047 - INFO -   Hypertension: 95 samples
+2025-06-07 13:42:49,047 - INFO - Training specialized model for Normal BP range...
+2025-06-07 13:42:54,252 - INFO -   Normal model - Best RMSE: 5.94 mmHg
+2025-06-07 13:42:54,252 - INFO - Training specialized model for Prehypertension BP range...
+2025-06-07 13:42:57,409 - INFO -   Prehypertension model - Best RMSE: 5.42 mmHg
+2025-06-07 13:42:57,409 - INFO - Training specialized model for Hypertension BP range...
+2025-06-07 13:43:00,693 - INFO -   Hypertension model - Best RMSE: 4.99 mmHg
+2025-06-07 13:43:00,694 - INFO - Stratified model training completed.
+2025-06-07 13:43:01,192 - INFO - All models saved to models/
+2025-06-07 13:43:03,143 - INFO - Used specialized models for 178 out of 178 predictions
+2025-06-07 13:43:03,328 - INFO - Evaluating on fold 3/5
+2025-06-07 13:43:03,330 - INFO - Training models using Bayesian optimization...
+2025-06-07 13:43:03,338 - INFO - Training SBP model with Bayesian optimization...
+2025-06-07 13:45:49,325 - INFO - Best SBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.008966671343764525), ('estimator__gb__max_depth', 9), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 4), ('estimator__gb__n_estimators', 500), ('estimator__gb__subsample', 0.8695737190579147)])
+2025-06-07 13:45:49,325 - INFO - Best SBP score: -5.7955
+2025-06-07 13:45:49,327 - INFO - Training quantile regressors for SBP uncertainty estimation
+2025-06-07 13:45:50,033 - INFO - Training DBP model with Bayesian optimization...
+2025-06-07 13:48:40,715 - INFO - Best DBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.012308714430300169), ('estimator__gb__max_depth', 3), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 17), ('estimator__gb__n_estimators', 464), ('estimator__gb__subsample', 0.5)])
+2025-06-07 13:48:40,715 - INFO - Best DBP score: -7.0704
+2025-06-07 13:48:40,717 - INFO - Training quantile regressors for DBP uncertainty estimation
+2025-06-07 13:48:41,427 - INFO - 
+Top Features for BP Prediction:
+2025-06-07 13:48:41,427 - INFO - 
+Top 10 Features for SBP Prediction:
+2025-06-07 13:48:41,428 - INFO -   sbp_category: 0.7081
+2025-06-07 13:48:41,428 - INFO -   sbp_prehypertension: 0.1059
+2025-06-07 13:48:41,428 - INFO -   sbp_std: 0.0189
+2025-06-07 13:48:41,429 - INFO -   sbp_stage1_htn: 0.0113
+2025-06-07 13:48:41,429 - INFO -   sbp_hypotension: 0.0084
+2025-06-07 13:48:41,429 - INFO -   sbp_stage2_htn: 0.0067
+2025-06-07 13:48:41,429 - INFO -   dbp_std: 0.0059
+2025-06-07 13:48:41,429 - INFO -   age: 0.0058
+2025-06-07 13:48:41,430 - INFO -   rr_mean: 0.0055
+2025-06-07 13:48:41,430 - INFO -   sbp_normal: 0.0050
+2025-06-07 13:48:41,430 - INFO - 
+Top 10 Features for DBP Prediction:
+2025-06-07 13:48:41,431 - INFO -   sbp_category: 0.2500
+2025-06-07 13:48:41,431 - INFO -   dbp_std: 0.1574
+2025-06-07 13:48:41,431 - INFO -   age: 0.1265
+2025-06-07 13:48:41,431 - INFO -   hemoglobin_mean: 0.0382
+2025-06-07 13:48:41,431 - INFO -   bun_creatinine_ratio: 0.0272
+2025-06-07 13:48:41,432 - INFO -   age_creatinine_product: 0.0263
+2025-06-07 13:48:41,432 - INFO -   hr_mean: 0.0261
+2025-06-07 13:48:41,432 - INFO -   sbp_stage2_htn: 0.0226
+2025-06-07 13:48:41,432 - INFO -   bun_mean: 0.0163
+2025-06-07 13:48:41,432 - INFO -   sodium_mean: 0.0140
+2025-06-07 13:48:41,433 - INFO - Training stacked ensemble models...
+2025-06-07 13:48:41,441 - INFO - Training SBP ensemble with Bayesian optimization...
+2025-06-07 13:53:19,119 - INFO - Best SBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.17502718999472844), ('gb__gb__max_depth', 6), ('gb__gb__n_estimators', 268), ('rf__rf__max_depth', 6), ('rf__rf__n_estimators', 145), ('xgb__xgb__learning_rate', 0.018838934200923585), ('xgb__xgb__n_estimators', 50)])
+2025-06-07 13:53:19,119 - INFO - Best SBP ensemble score: -5.7862
+2025-06-07 13:53:19,119 - INFO - Training DBP ensemble with Bayesian optimization...
+2025-06-07 13:57:52,142 - INFO - Best DBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.12287608582119026), ('gb__gb__max_depth', 7), ('gb__gb__n_estimators', 126), ('rf__rf__max_depth', 10), ('rf__rf__n_estimators', 266), ('xgb__xgb__learning_rate', 0.01205232974328543), ('xgb__xgb__n_estimators', 85)])
+2025-06-07 13:57:52,142 - INFO - Best DBP ensemble score: -7.4664
+2025-06-07 13:57:52,142 - INFO - Training stratified models for different BP ranges...
+2025-06-07 13:57:52,143 - INFO -   Hypotension: 8 samples
+2025-06-07 13:57:52,143 - INFO -   Normal: 369 samples
+2025-06-07 13:57:52,143 - INFO -   Prehypertension: 243 samples
+2025-06-07 13:57:52,143 - INFO -   Hypertension: 91 samples
+2025-06-07 13:57:52,143 - INFO - Training specialized model for Normal BP range...
+2025-06-07 13:57:57,623 - INFO -   Normal model - Best RMSE: 5.81 mmHg
+2025-06-07 13:57:57,623 - INFO - Training specialized model for Prehypertension BP range...
+2025-06-07 13:58:01,046 - INFO -   Prehypertension model - Best RMSE: 5.73 mmHg
+2025-06-07 13:58:01,046 - INFO - Training specialized model for Hypertension BP range...
+2025-06-07 13:58:04,260 - INFO -   Hypertension model - Best RMSE: 5.42 mmHg
+2025-06-07 13:58:04,263 - INFO - Stratified model training completed.
+2025-06-07 13:58:04,792 - INFO - All models saved to models/
+2025-06-07 13:58:06,758 - INFO - Used specialized models for 178 out of 178 predictions
+2025-06-07 13:58:06,887 - INFO - Evaluating on fold 4/5
+2025-06-07 13:58:06,890 - INFO - Training models using Bayesian optimization...
+2025-06-07 13:58:06,899 - INFO - Training SBP model with Bayesian optimization...
+2025-06-07 14:01:10,004 - INFO - Best SBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.010595876505900662), ('estimator__gb__max_depth', 9), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 5), ('estimator__gb__n_estimators', 361), ('estimator__gb__subsample', 0.6845846315065577)])
+2025-06-07 14:01:10,005 - INFO - Best SBP score: -5.9895
+2025-06-07 14:01:10,006 - INFO - Training quantile regressors for SBP uncertainty estimation
+2025-06-07 14:01:10,707 - INFO - Training DBP model with Bayesian optimization...
+2025-06-07 14:04:01,153 - INFO - Best DBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.020392405931342495), ('estimator__gb__max_depth', 10), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 20), ('estimator__gb__n_estimators', 344), ('estimator__gb__subsample', 0.5)])
+2025-06-07 14:04:01,153 - INFO - Best DBP score: -7.1770
+2025-06-07 14:04:01,154 - INFO - Training quantile regressors for DBP uncertainty estimation
+2025-06-07 14:04:01,859 - INFO - 
+Top Features for BP Prediction:
+2025-06-07 14:04:01,859 - INFO - 
+Top 10 Features for SBP Prediction:
+2025-06-07 14:04:01,860 - INFO -   sbp_category: 0.6886
+2025-06-07 14:04:01,860 - INFO -   sbp_prehypertension: 0.0951
+2025-06-07 14:04:01,860 - INFO -   sbp_std: 0.0220
+2025-06-07 14:04:01,861 - INFO -   sbp_stage1_htn: 0.0086
+2025-06-07 14:04:01,861 - INFO -   sbp_stage2_htn: 0.0084
+2025-06-07 14:04:01,861 - INFO -   sbp_hypotension: 0.0073
+2025-06-07 14:04:01,861 - INFO -   dbp_std: 0.0071
+2025-06-07 14:04:01,861 - INFO -   rr_mean: 0.0066
+2025-06-07 14:04:01,862 - INFO -   hr_trend: 0.0059
+2025-06-07 14:04:01,862 - INFO -   sodium_mean: 0.0058
+2025-06-07 14:04:01,862 - INFO - 
+Top 10 Features for DBP Prediction:
+2025-06-07 14:04:01,863 - INFO -   sbp_category: 0.1614
+2025-06-07 14:04:01,863 - INFO -   age: 0.1132
+2025-06-07 14:04:01,863 - INFO -   dbp_std: 0.1050
+2025-06-07 14:04:01,863 - INFO -   bun_creatinine_ratio: 0.0451
+2025-06-07 14:04:01,864 - INFO -   hemoglobin_mean: 0.0319
+2025-06-07 14:04:01,864 - INFO -   hr_mean: 0.0227
+2025-06-07 14:04:01,864 - INFO -   wbc_mean: 0.0226
+2025-06-07 14:04:01,864 - INFO -   bun_mean: 0.0216
+2025-06-07 14:04:01,864 - INFO -   sbp_std: 0.0206
+2025-06-07 14:04:01,865 - INFO -   gcs_mean: 0.0182
+2025-06-07 14:04:01,865 - INFO - Training stacked ensemble models...
+2025-06-07 14:04:01,873 - INFO - Training SBP ensemble with Bayesian optimization...
+2025-06-07 14:08:40,628 - INFO - Best SBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.17502718999472844), ('gb__gb__max_depth', 6), ('gb__gb__n_estimators', 268), ('rf__rf__max_depth', 6), ('rf__rf__n_estimators', 145), ('xgb__xgb__learning_rate', 0.018838934200923585), ('xgb__xgb__n_estimators', 50)])
+2025-06-07 14:08:40,628 - INFO - Best SBP ensemble score: -5.9121
+2025-06-07 14:08:40,628 - INFO - Training DBP ensemble with Bayesian optimization...
+2025-06-07 14:13:14,943 - INFO - Best DBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.010109347810455678), ('gb__gb__max_depth', 6), ('gb__gb__n_estimators', 235), ('rf__rf__max_depth', 5), ('rf__rf__n_estimators', 195), ('xgb__xgb__learning_rate', 0.02277258116219963), ('xgb__xgb__n_estimators', 128)])
+2025-06-07 14:13:14,943 - INFO - Best DBP ensemble score: -7.5603
+2025-06-07 14:13:14,943 - INFO - Training stratified models for different BP ranges...
+2025-06-07 14:13:14,944 - INFO -   Hypotension: 6 samples
+2025-06-07 14:13:14,944 - INFO -   Normal: 368 samples
+2025-06-07 14:13:14,944 - INFO -   Prehypertension: 239 samples
+2025-06-07 14:13:14,944 - INFO -   Hypertension: 98 samples
+2025-06-07 14:13:14,944 - INFO - Training specialized model for Normal BP range...
+2025-06-07 14:13:20,274 - INFO -   Normal model - Best RMSE: 6.06 mmHg
+2025-06-07 14:13:20,274 - INFO - Training specialized model for Prehypertension BP range...
+2025-06-07 14:13:23,686 - INFO -   Prehypertension model - Best RMSE: 5.81 mmHg
+2025-06-07 14:13:23,686 - INFO - Training specialized model for Hypertension BP range...
+2025-06-07 14:13:27,380 - INFO -   Hypertension model - Best RMSE: 5.05 mmHg
+2025-06-07 14:13:27,381 - INFO - Stratified model training completed.
+2025-06-07 14:13:27,793 - INFO - All models saved to models/
+2025-06-07 14:13:29,729 - INFO - Used specialized models for 178 out of 178 predictions
+2025-06-07 14:13:29,834 - INFO - Evaluating on fold 5/5
+2025-06-07 14:13:29,836 - INFO - Training models using Bayesian optimization...
+2025-06-07 14:13:29,844 - INFO - Training SBP model with Bayesian optimization...
+2025-06-07 14:15:58,893 - INFO - Best SBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.01926565574355471), ('estimator__gb__max_depth', 3), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 20), ('estimator__gb__n_estimators', 304), ('estimator__gb__subsample', 0.5)])
+2025-06-07 14:15:58,894 - INFO - Best SBP score: -5.8744
+2025-06-07 14:15:58,895 - INFO - Training quantile regressors for SBP uncertainty estimation
+2025-06-07 14:15:59,593 - INFO - Training DBP model with Bayesian optimization...
+2025-06-07 14:18:49,098 - INFO - Best DBP parameters: OrderedDict([('estimator__gb__learning_rate', 0.009777151138991566), ('estimator__gb__max_depth', 3), ('estimator__gb__max_features', None), ('estimator__gb__min_samples_split', 17), ('estimator__gb__n_estimators', 500), ('estimator__gb__subsample', 0.5)])
+2025-06-07 14:18:49,098 - INFO - Best DBP score: -7.0679
+2025-06-07 14:18:49,100 - INFO - Training quantile regressors for DBP uncertainty estimation
+2025-06-07 14:18:49,814 - INFO - 
+Top Features for BP Prediction:
+2025-06-07 14:18:49,814 - INFO - 
+Top 10 Features for SBP Prediction:
+2025-06-07 14:18:49,815 - INFO -   sbp_category: 0.7040
+2025-06-07 14:18:49,815 - INFO -   sbp_prehypertension: 0.1091
+2025-06-07 14:18:49,815 - INFO -   sbp_std: 0.0305
+2025-06-07 14:18:49,816 - INFO -   sbp_stage2_htn: 0.0118
+2025-06-07 14:18:49,816 - INFO -   sbp_stage1_htn: 0.0105
+2025-06-07 14:18:49,816 - INFO -   dbp_std: 0.0100
+2025-06-07 14:18:49,816 - INFO -   bun_creatinine_ratio: 0.0057
+2025-06-07 14:18:49,816 - INFO -   spo2_mean: 0.0055
+2025-06-07 14:18:49,817 - INFO -   alt_mean: 0.0053
+2025-06-07 14:18:49,817 - INFO -   sbp_hypotension: 0.0049
+2025-06-07 14:18:49,817 - INFO - 
+Top 10 Features for DBP Prediction:
+2025-06-07 14:18:49,818 - INFO -   sbp_category: 0.2359
+2025-06-07 14:18:49,818 - INFO -   dbp_std: 0.1648
+2025-06-07 14:18:49,818 - INFO -   age: 0.1163
+2025-06-07 14:18:49,818 - INFO -   hemoglobin_mean: 0.0576
+2025-06-07 14:18:49,818 - INFO -   age_creatinine_product: 0.0345
+2025-06-07 14:18:49,819 - INFO -   bun_creatinine_ratio: 0.0321
+2025-06-07 14:18:49,819 - INFO -   sbp_stage2_htn: 0.0294
+2025-06-07 14:18:49,819 - INFO -   hr_mean: 0.0190
+2025-06-07 14:18:49,819 - INFO -   gcs_mean: 0.0172
+2025-06-07 14:18:49,819 - INFO -   potassium_mean: 0.0169
+2025-06-07 14:18:49,820 - INFO - Training stacked ensemble models...
+2025-06-07 14:18:49,828 - INFO - Training SBP ensemble with Bayesian optimization...
+2025-06-07 14:23:23,442 - INFO - Best SBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.09015555039236096), ('gb__gb__max_depth', 7), ('gb__gb__n_estimators', 91), ('rf__rf__max_depth', 4), ('rf__rf__n_estimators', 250), ('xgb__xgb__learning_rate', 0.030530749570321522), ('xgb__xgb__n_estimators', 165)])
+2025-06-07 14:23:23,442 - INFO - Best SBP ensemble score: -5.8953
+2025-06-07 14:23:23,443 - INFO - Training DBP ensemble with Bayesian optimization...
+2025-06-07 14:27:57,304 - INFO - Best DBP ensemble parameters: OrderedDict([('gb__gb__learning_rate', 0.114012258603381), ('gb__gb__max_depth', 4), ('gb__gb__n_estimators', 200), ('rf__rf__max_depth', 9), ('rf__rf__n_estimators', 181), ('xgb__xgb__learning_rate', 0.013310362066695544), ('xgb__xgb__n_estimators', 239)])
+2025-06-07 14:27:57,304 - INFO - Best DBP ensemble score: -7.3127
+2025-06-07 14:27:57,304 - INFO - Training stratified models for different BP ranges...
+2025-06-07 14:27:57,305 - INFO -   Hypotension: 6 samples
+2025-06-07 14:27:57,305 - INFO -   Normal: 370 samples
+2025-06-07 14:27:57,305 - INFO -   Prehypertension: 242 samples
+2025-06-07 14:27:57,305 - INFO -   Hypertension: 94 samples
+2025-06-07 14:27:57,305 - INFO - Training specialized model for Normal BP range...
+2025-06-07 14:28:02,327 - INFO -   Normal model - Best RMSE: 6.08 mmHg
+2025-06-07 14:28:02,328 - INFO - Training specialized model for Prehypertension BP range...
+2025-06-07 14:28:05,842 - INFO -   Prehypertension model - Best RMSE: 5.60 mmHg
+2025-06-07 14:28:05,842 - INFO - Training specialized model for Hypertension BP range...
+2025-06-07 14:28:09,467 - INFO -   Hypertension model - Best RMSE: 5.90 mmHg
+2025-06-07 14:28:09,468 - INFO - Stratified model training completed.
+2025-06-07 14:28:09,934 - INFO - All models saved to models/
+2025-06-07 14:28:11,874 - INFO - Used specialized models for 177 out of 177 predictions
+2025-06-07 14:28:11,993 - INFO - 
+Overall Model Performance:
+2025-06-07 14:28:11,993 - INFO - 
+SBP Metrics:
+2025-06-07 14:28:11,994 - INFO -   RMSE: 6.03 mmHg
+2025-06-07 14:28:11,994 - INFO -   MAE: 4.93 mmHg
+2025-06-07 14:28:11,994 - INFO -   R²: 0.8612
+2025-06-07 14:28:11,994 - INFO -   Pearson r: 0.9280
+2025-06-07 14:28:11,994 - INFO -   Within 5 mmHg: 57.0%
+2025-06-07 14:28:11,994 - INFO -   Within 10 mmHg: 91.1%
+2025-06-07 14:28:11,994 - INFO -   Prediction Interval Coverage: 80.3%
+2025-06-07 14:28:11,994 - INFO -   Average Prediction Interval Width: 22.89 mmHg
+2025-06-07 14:28:11,994 - INFO - 
+DBP Metrics:
+2025-06-07 14:28:11,994 - INFO -   RMSE: 7.13 mmHg
+2025-06-07 14:28:11,994 - INFO -   MAE: 5.45 mmHg
+2025-06-07 14:28:11,994 - INFO -   R²: 0.4909
+2025-06-07 14:28:11,995 - INFO -   Pearson r: 0.7007
+2025-06-07 14:28:11,995 - INFO -   Within 5 mmHg: 55.7%
+2025-06-07 14:28:11,995 - INFO -   Within 10 mmHg: 86.7%
+2025-06-07 14:28:11,995 - INFO -   Prediction Interval Coverage: 79.9%
+2025-06-07 14:28:11,995 - INFO -   Average Prediction Interval Width: 23.17 mmHg
+2025-06-07 14:28:11,995 - INFO - 
+SBP Metrics by Fold:
+2025-06-07 14:28:11,995 - INFO -   Fold 1: RMSE=6.04, R²=0.8690, Pearson r=0.9323
+2025-06-07 14:28:11,995 - INFO -   Fold 2: RMSE=6.45, R²=0.8627, Pearson r=0.9297
+2025-06-07 14:28:11,995 - INFO -   Fold 3: RMSE=5.49, R²=0.8564, Pearson r=0.9286
+2025-06-07 14:28:11,995 - INFO -   Fold 4: RMSE=6.21, R²=0.8521, Pearson r=0.9303
+2025-06-07 14:28:11,995 - INFO -   Fold 5: RMSE=5.89, R²=0.8588, Pearson r=0.9281
+2025-06-07 14:28:11,995 - INFO - 
+DBP Metrics by Fold:
+2025-06-07 14:28:11,996 - INFO -   Fold 1: RMSE=8.23, R²=0.5468, Pearson r=0.7661
+2025-06-07 14:28:11,996 - INFO -   Fold 2: RMSE=6.71, R²=0.4738, Pearson r=0.7286
+2025-06-07 14:28:11,996 - INFO -   Fold 3: RMSE=6.58, R²=0.4369, Pearson r=0.6779
+2025-06-07 14:28:11,996 - INFO -   Fold 4: RMSE=6.96, R²=0.4349, Pearson r=0.6595
+2025-06-07 14:28:11,996 - INFO -   Fold 5: RMSE=7.05, R²=0.4935, Pearson r=0.7101
+2025-06-07 14:28:11,997 - INFO - 
+Hypothesis Testing for SBP:
+2025-06-07 14:28:11,998 - INFO - T-test statistic: -0.7389, p-value: 0.4602
+2025-06-07 14:28:11,998 - INFO - Bland-Altman mean difference: -0.15 mmHg
+2025-06-07 14:28:11,998 - INFO - Bland-Altman limits of agreement: (-11.96, 11.66) mmHg
+2025-06-07 14:28:11,998 - INFO - Mean Absolute Error: 4.93 mmHg
+2025-06-07 14:28:11,998 - INFO - Standard Error: 0.2021 mmHg
+2025-06-07 14:28:11,998 - INFO - BHS Grade: B (57.0% within 5mmHg, 91.1% within 10mmHg, 99.0% within 15mmHg)
+2025-06-07 14:28:11,998 - INFO - AAMI Standard: PASS
+2025-06-07 14:28:11,999 - INFO - 
+Hypothesis Testing for DBP:
+2025-06-07 14:28:12,000 - INFO - T-test statistic: 0.1078, p-value: 0.9142
+2025-06-07 14:28:12,000 - INFO - Bland-Altman mean difference: 0.03 mmHg
+2025-06-07 14:28:12,000 - INFO - Bland-Altman limits of agreement: (-13.96, 14.01) mmHg
+2025-06-07 14:28:12,000 - INFO - Mean Absolute Error: 5.45 mmHg
+2025-06-07 14:28:12,000 - INFO - Standard Error: 0.2393 mmHg
+2025-06-07 14:28:12,000 - INFO - BHS Grade: B (55.7% within 5mmHg, 86.7% within 10mmHg, 95.6% within 15mmHg)
+2025-06-07 14:28:12,000 - INFO - AAMI Standard: PASS
+2025-06-07 14:28:12,004 - INFO - 
+Stratified Analysis by BP Category:
+2025-06-07 14:28:12,005 - INFO - 
+SBP Stratified Results:
+2025-06-07 14:28:12,018 - INFO -   Hypotension: n=8, MAE=15.14 mmHg, Within 5mmHg=0.0%, Within 10mmHg=0.0%, BHS Grade=D
+2025-06-07 14:28:12,018 - INFO -   Normal: n=461, MAE=5.06 mmHg, Within 5mmHg=56.6%, Within 10mmHg=90.5%, BHS Grade=B
+2025-06-07 14:28:12,019 - INFO -   Prehypertension: n=302, MAE=4.74 mmHg, Within 5mmHg=56.3%, Within 10mmHg=93.7%, BHS Grade=B
+2025-06-07 14:28:12,019 - INFO -   Stage 1 HTN: n=95, MAE=4.16 mmHg, Within 5mmHg=63.2%, Within 10mmHg=93.7%, BHS Grade=A
+2025-06-07 14:28:12,019 - INFO -   Stage 2 HTN: n=23, MAE=4.52 mmHg, Within 5mmHg=69.6%, Within 10mmHg=91.3%, BHS Grade=A
+2025-06-07 14:28:12,024 - INFO - 
+DBP Stratified Results:
+2025-06-07 14:28:12,033 - INFO -   Hypotension: n=495, MAE=4.87 mmHg, Within 5mmHg=60.4%, Within 10mmHg=90.1%, BHS Grade=A
+2025-06-07 14:28:12,033 - INFO -   Normal: n=368, MAE=5.57 mmHg, Within 5mmHg=52.4%, Within 10mmHg=86.1%, BHS Grade=B
+2025-06-07 14:28:12,034 - INFO -   Prehypertension: n=15, MAE=11.55 mmHg, Within 5mmHg=20.0%, Within 10mmHg=53.3%, BHS Grade=D
+2025-06-07 14:28:12,034 - INFO -   Stage 1 HTN: n=8, MAE=17.96 mmHg, Within 5mmHg=0.0%, Within 10mmHg=0.0%, BHS Grade=D
+2025-06-07 14:28:12,034 - INFO -   Stage 2 HTN: n=3, MAE=23.84 mmHg, Within 5mmHg=0.0%, Within 10mmHg=0.0%, BHS Grade=D
+2025-06-07 14:28:12,082 - INFO - 
+Stratified analysis completed. Results saved for MIMIC-III.
+2025-06-07 14:28:12,086 - INFO - 
+Clinical Utility Metrics:
+2025-06-07 14:28:12,086 - INFO - Hypotension Detection (SBP < 90 mmHg):
+2025-06-07 14:28:12,086 - INFO -   Sensitivity: 0.0%
+2025-06-07 14:28:12,086 - INFO -   Specificity: 100.0%
+2025-06-07 14:28:12,086 - INFO -   PPV: 0.0%
+2025-06-07 14:28:12,086 - INFO -   NPV: 99.1%
+2025-06-07 14:28:12,086 - INFO - 
+Hypertension Detection (SBP > 140 mmHg):
+2025-06-07 14:28:12,086 - INFO -   Sensitivity: 100.0%
+2025-06-07 14:28:12,087 - INFO -   Specificity: 100.0%
+2025-06-07 14:28:12,087 - INFO -   PPV: 100.0%
+2025-06-07 14:28:12,087 - INFO -   NPV: 100.0%
+2025-06-07 14:28:12,087 - INFO - 
+Uncertainty Quantification:
+2025-06-07 14:28:12,087 - INFO -   Prediction Interval Coverage: 80.3%
+2025-06-07 14:28:12,087 - INFO -   Average Interval Width: 22.89 mmHg
+2025-06-07 14:28:12,088 - INFO - 
+Clinical Workflow Impact Simulation:
+2025-06-07 14:28:12,088 - INFO - Patient Risk Stratification:
+2025-06-07 14:28:12,088 - INFO -   Low Risk: 383 patients
+2025-06-07 14:28:12,088 - INFO -   Medium Risk: 206 patients
+2025-06-07 14:28:12,088 - INFO -   High Risk: 300 patients
+2025-06-07 14:28:12,088 - INFO - 
+Workflow Efficiency:
+2025-06-07 14:28:12,088 - INFO -   Baseline Measurement Time: 1200.0 nurse-hours per day
+2025-06-07 14:28:12,088 - INFO -   Reduced Measurement Time: 775.2 nurse-hours per day
+2025-06-07 14:28:12,089 - INFO -   Time Saved: 424.8 nurse-hours per day
+2025-06-07 14:28:12,089 - INFO -   Early Intervention Potential: 30.0 hours of earlier detection
+2025-06-07 14:28:19,943 - INFO - Performing SHAP analysis for feature importance...
+2025-06-07 14:28:19,966 - INFO - Calculating SHAP values for SBP model...
+2025-06-07 14:28:19,969 - INFO - Using 500 random samples for SHAP calculation (from 889 total)
+2025-06-07 14:28:25,356 - INFO - Calculating SHAP values for DBP model...
+2025-06-07 14:28:30,639 - INFO - SHAP analysis completed and saved
+2025-06-07 14:28:30,642 - INFO - Evaluation results saved to results/MIMIC-III_evaluation_20250607_125351.json
+2025-06-07 14:28:30,643 - INFO - 
+Comparison with State-of-the-Art Methods:
+2025-06-07 14:28:30,643 - INFO - 
+Systolic BP Estimation Comparison:
+2025-06-07 14:28:30,643 - INFO - Method                    RMSE       R²         Within 5mmHg    Reference                     
+2025-06-07 14:28:30,643 - INFO - ------------------------------------------------------------------------------------------
+2025-06-07 14:28:30,643 - INFO - Clinical Oscillometric Devices 8.00       0.60       58.0            AAMI standards & commercial devices (IEEE JBHI 2021)
+2025-06-07 14:28:30,643 - INFO - PPG-Based Methods         10.20      0.55       45.0            Liang et al. (IEEE TBME 2022) 
+2025-06-07 14:28:30,644 - INFO - ECG-Based Methods         9.10       0.62       48.0            Slapničar et al. (IEEE Access 2021)
+2025-06-07 14:28:30,644 - INFO - ML on Clinical Variables  11.50      0.50       40.0            Miao et al. (IEEE JBHI 2020)  
+2025-06-07 14:28:30,644 - INFO - Our MIMIC-III Method      6.03       0.86       57.0            This study                    
+2025-06-07 14:28:30,644 - INFO - 
+Diastolic BP Estimation Comparison:
+2025-06-07 14:28:30,644 - INFO - Method                    RMSE       R²         Within 5mmHg    Reference                     
+2025-06-07 14:28:30,644 - INFO - ------------------------------------------------------------------------------------------
+2025-06-07 14:28:30,644 - INFO - Clinical Oscillometric Devices 6.50       0.65       62.0            AAMI standards & commercial devices (IEEE JBHI 2021)
+2025-06-07 14:28:30,644 - INFO - PPG-Based Methods         7.80       0.60       51.0            Liang et al. (IEEE TBME 2022) 
+2025-06-07 14:28:30,644 - INFO - ECG-Based Methods         6.50       0.67       56.0            Slapničar et al. (IEEE Access 2021)
+2025-06-07 14:28:30,644 - INFO - ML on Clinical Variables  8.00       0.55       45.0            Miao et al. (IEEE JBHI 2020)  
+2025-06-07 14:28:30,644 - INFO - Our MIMIC-III Method      7.13       0.49       55.7            This study                    
+2025-06-07 14:28:30,644 - INFO - 
+Interpretation for Publication:
+2025-06-07 14:28:30,645 - INFO - Our method improves SBP RMSE by 24.7% compared to the best literature method.
+2025-06-07 14:28:30,645 - INFO - Our method demonstrates competitive performance compared with existing approaches.
+2025-06-07 14:28:33,477 - INFO - Starting eICU external validation...
+2025-06-07 14:28:33,478 - INFO - ============================================================
+2025-06-07 14:28:33,478 - INFO - STARTING eICU EXTERNAL VALIDATION
+2025-06-07 14:28:33,478 - INFO - ============================================================
+2025-06-07 14:28:35,818 - INFO - BigQuery client initialized for project: d1namo-ecg-processing (eICU)
+2025-06-07 14:28:35,818 - INFO - Step 1: Extracting eICU patient cohort...
+2025-06-07 14:28:35,818 - INFO - Extracting eICU patient cohort...
+2025-06-07 14:28:36,761 - INFO - Extracted 1000 eICU patients
+2025-06-07 14:28:36,761 - INFO - ✓ Successfully extracted 1000 eICU patients
+2025-06-07 14:28:36,762 - INFO - Step 2: Extracting eICU BP data...
+2025-06-07 14:28:36,763 - INFO - Extracting eICU BP measurements...
+2025-06-07 14:28:37,602 - INFO - Extracted BP data for 378 patients
+2025-06-07 14:28:37,602 - INFO - ✓ BP data: 378 patients with valid measurements
+2025-06-07 14:28:37,602 - INFO - Step 3: Extracting other eICU features...
+2025-06-07 14:28:37,603 - INFO - Extracting eICU vital signs features...
+2025-06-07 14:28:38,523 - INFO - Extracted vital signs for 993 patients
+2025-06-07 14:28:38,524 - INFO - Extracting eICU lab features...
+2025-06-07 14:28:39,356 - INFO - Extracted lab data for 996 patients
+2025-06-07 14:28:39,357 - INFO - Extracting eICU medication features...
+2025-06-07 14:28:40,425 - INFO - Extracted medication data for 990 patients
+2025-06-07 14:28:40,425 - INFO - Extracting eICU temporal features...
+2025-06-07 14:28:41,237 - INFO - Extracted temporal features for 886 patients
+2025-06-07 14:28:41,237 - INFO - ✓ Temporal features: 886 patients
+2025-06-07 14:28:41,238 - INFO - Extracting eICU comorbidity features...
+2025-06-07 14:28:41,897 - INFO - Extracted comorbidity data for 566 patients
+2025-06-07 14:28:41,897 - INFO - ✓ Comorbidity features: 566 patients
+2025-06-07 14:28:41,897 - INFO - Step 4: Processing eICU features...
+2025-06-07 14:28:41,897 - INFO - Processing and combining features for eICU...
+2025-06-07 14:28:42,102 - INFO - Final eICU dataset shape: (378, 133)
+2025-06-07 14:28:42,102 - INFO - ✓ Processed eICU dataset shape: (378, 133)
+2025-06-07 14:28:42,102 - INFO - Step 5: Imputing missing values...
+2025-06-07 14:28:42,108 - INFO - Handling missing values in 53 columns
+2025-06-07 14:28:42,108 - INFO -   - weight: 16.9% missing
+2025-06-07 14:28:42,108 - INFO -   - rr_mean: 6.1% missing
+2025-06-07 14:28:42,109 - INFO -   - rr_std: 6.1% missing
+2025-06-07 14:28:42,109 - INFO -   - temp_mean: 100.0% missing
+2025-06-07 14:28:42,109 - INFO -   - cvp_mean: 52.6% missing
+2025-06-07 14:28:42,109 - INFO -   - etco2_mean: 95.8% missing
+2025-06-07 14:28:42,109 - INFO -   - gcs_mean: 17.2% missing
+2025-06-07 14:28:42,109 - INFO -   - sodium_mean: 0.8% missing
+2025-06-07 14:28:42,109 - INFO -   - potassium_mean: 0.3% missing
+2025-06-07 14:28:42,109 - INFO -   - creatinine_mean: 1.1% missing
+2025-06-07 14:28:42,109 - INFO -   - bun_mean: 1.3% missing
+2025-06-07 14:28:42,109 - INFO -   - hemoglobin_mean: 0.5% missing
+2025-06-07 14:28:42,109 - INFO -   - wbc_mean: 0.5% missing
+2025-06-07 14:28:42,110 - INFO -   - lactate_mean: 72.0% missing
+2025-06-07 14:28:42,110 - INFO -   - troponin_mean: 70.9% missing
+2025-06-07 14:28:42,110 - INFO -   - crp_mean: 91.0% missing
+2025-06-07 14:28:42,110 - INFO -   - ph_mean: 15.3% missing
+2025-06-07 14:28:42,110 - INFO -   - pco2_mean: 16.1% missing
+2025-06-07 14:28:42,110 - INFO -   - po2_mean: 100.0% missing
+2025-06-07 14:28:42,110 - INFO -   - alt_mean: 30.7% missing
+2025-06-07 14:28:42,110 - INFO -   - ast_mean: 30.7% missing
+2025-06-07 14:28:42,110 - INFO -   - alp_mean: 30.7% missing
+2025-06-07 14:28:42,110 - INFO -   - hr_cv_temporal: 6.9% missing
+2025-06-07 14:28:42,110 - INFO -   - hr_range: 6.9% missing
+2025-06-07 14:28:42,110 - INFO -   - rr_range: 6.9% missing
+2025-06-07 14:28:42,111 - INFO -   - spo2_range: 6.9% missing
+2025-06-07 14:28:42,111 - INFO -   - total_measurements: 6.9% missing
+2025-06-07 14:28:42,111 - INFO -   - unique_timepoints: 6.9% missing
+2025-06-07 14:28:42,111 - INFO -   - measurement_span_minutes: 6.9% missing
+2025-06-07 14:28:42,111 - INFO -   - hypertension: 40.2% missing
+2025-06-07 14:28:42,111 - INFO -   - diabetes: 40.2% missing
+2025-06-07 14:28:42,111 - INFO -   - heart_failure: 40.2% missing
+2025-06-07 14:28:42,111 - INFO -   - coronary_artery_disease: 40.2% missing
+2025-06-07 14:28:42,111 - INFO -   - chronic_kidney_disease: 40.2% missing
+2025-06-07 14:28:42,111 - INFO -   - stroke_history: 40.2% missing
+2025-06-07 14:28:42,111 - INFO -   - copd: 40.2% missing
+2025-06-07 14:28:42,112 - INFO -   - liver_disease: 40.2% missing
+2025-06-07 14:28:42,112 - INFO -   - total_diagnoses: 40.2% missing
+2025-06-07 14:28:42,112 - INFO -   - bmi: 16.9% missing
+2025-06-07 14:28:42,112 - INFO -   - hr_complexity: 6.9% missing
+2025-06-07 14:28:42,112 - INFO -   - oxy_index: 6.1% missing
+2025-06-07 14:28:42,112 - INFO -   - bun_creatinine_ratio: 1.3% missing
+2025-06-07 14:28:42,112 - INFO -   - hr_creatinine_product: 1.1% missing
+2025-06-07 14:28:42,112 - INFO -   - age_creatinine_product: 1.1% missing
+2025-06-07 14:28:42,112 - INFO -   - vasopressor_lactate_interaction: 72.0% missing
+2025-06-07 14:28:42,112 - INFO -   - creatinine_mean_squared: 1.1% missing
+2025-06-07 14:28:42,112 - INFO -   - creatinine_mean_sqrt: 1.1% missing
+2025-06-07 14:28:42,113 - INFO -   - creatinine_mean_log: 1.1% missing
+2025-06-07 14:28:42,113 - INFO -   - lactate_mean_squared: 72.0% missing
+2025-06-07 14:28:42,113 - INFO -   - lactate_mean_sqrt: 72.0% missing
+2025-06-07 14:28:42,113 - INFO -   - lactate_mean_log: 72.0% missing
+2025-06-07 14:28:42,113 - INFO -   - creatinine_sbp_ratio: 1.1% missing
+2025-06-07 14:28:42,113 - INFO -   - perfusion_index: 72.0% missing
+2025-06-07 14:28:48,141 - INFO - Performing multivariate imputation with IterativeImputer (MICE)
+2025-06-07 14:28:48,148 - INFO - Using median imputation for 11 high-missingness columns
+2025-06-07 14:28:53,137 - INFO - Performing KNN imputation
+2025-06-07 14:28:53,144 - INFO - Using median imputation for 11 high-missingness columns
+2025-06-07 14:28:53,464 - INFO - Performing sensitivity analysis on imputation methods
+2025-06-07 14:28:56,826 - INFO - Imputation method comparison saved to imputation_stats_eICU_20250607_125351.csv
+2025-06-07 14:28:56,827 - INFO - Imputation sensitivity analysis summary:
+2025-06-07 14:28:56,827 - INFO -   Mean difference between methods: 0.10%
+2025-06-07 14:28:56,827 - INFO -   Maximum difference between methods: 0.42%
+2025-06-07 14:28:56,827 - INFO - Imputation methods produce similar results (all differences < 10%). Proceeding with MICE imputation.
+2025-06-07 14:28:56,827 - INFO - Step 6: Removing potential data leakage...
+2025-06-07 14:28:56,827 - INFO - Removing leaky verification features from dataset
+2025-06-07 14:28:56,828 - WARNING - REMOVING 2 LEAKY FEATURES: creatinine_sbp_ratio, hrv_sbp_interaction
+2025-06-07 14:28:56,833 - INFO - Step 7: Preparing data for model evaluation...
+2025-06-07 14:28:56,833 - INFO - Preparing eICU data for model training...
+2025-06-07 14:28:56,833 - INFO - Removing leaky verification features from dataset
+2025-06-07 14:28:56,833 - INFO - No leaky features found in dataset
+2025-06-07 14:28:56,842 - INFO - ✓ No data leakage detected - dataset is clean
+2025-06-07 14:28:56,846 - WARNING - Found 756 missing values in features, filling with medians
+2025-06-07 14:28:56,865 - INFO - Converting categorical column: first_careunit
+2025-06-07 14:28:56,866 - INFO - Converting categorical column: ethnicity
+2025-06-07 14:28:56,867 - INFO - Converting categorical column: hospitaladmitsource
+2025-06-07 14:28:56,868 - INFO - Converting categorical column: insurance
+2025-06-07 14:28:56,869 - INFO - Converting categorical column: language
+2025-06-07 14:28:56,870 - INFO - Converting categorical column: apacheadmissiondx
+2025-06-07 14:28:56,871 - INFO - Converting categorical column: bmi_category
+2025-06-07 14:28:56,872 - INFO - Converting categorical column: sbp_category
+2025-06-07 14:28:56,881 - INFO - Removed 5 low-variance features
+2025-06-07 14:28:56,921 - INFO - Removing 17 highly correlated features
+2025-06-07 14:28:56,923 - INFO - ✓ No data leakage detected - dataset is clean
+2025-06-07 14:28:56,923 - INFO - Final feature set: 98 features, 378 samples
+2025-06-07 14:28:56,923 - INFO - Target set: (378, 2)
+2025-06-07 14:28:56,924 - INFO - Step 7.5: Aligning features with training data...
+2025-06-07 14:28:56,924 - INFO - Aligning features for eICU dataset...
+2025-06-07 14:28:56,943 - INFO - Feature alignment completed. Final shape: (378, 74)
+2025-06-07 14:28:56,943 - WARNING - Missing features filled with defaults: ['sbp_lability_events', 'po2_mean', 'age_creatinine_product', 'language', 'gender_male', 'deceased', 'admit_year', 'temp_mean', 'insurance', 'lactate_mean_squared']...
+2025-06-07 14:28:56,943 - INFO - Extra features ignored: ['vasopressor_count', 'any_acei', 'etco2_mean', 'total_measurements', 'bmi_normal', 'any_beta_blocker', 'vasopressor_lactate_interaction', 'hospitaladmitsource', 'beta_blocker_hr_effect', 'bmi']...
+2025-06-07 14:28:56,943 - INFO - ✓ Final eICU validation set: 378 patients, 74 features
+2025-06-07 14:28:56,943 - INFO - ✓ No data leakage detected - dataset is clean
+2025-06-07 14:28:56,943 - INFO - Step 8: Evaluating model on eICU data...
+2025-06-07 14:28:57,141 - ERROR - Error in stratified prediction: Input X contains infinity or a value too large for dtype('float32').
+2025-06-07 14:28:57,276 - INFO - ✓ eICU external validation completed successfully!
+2025-06-07 14:28:57,276 - INFO - ============================================================
+2025-06-07 14:28:57,276 - INFO - eICU VALIDATION RESULTS:
+2025-06-07 14:28:57,276 - INFO - SBP - RMSE: 7.84 mmHg, R²: 0.8445
+2025-06-07 14:28:57,276 - INFO - DBP - RMSE: 9.31 mmHg, R²: 0.3192
+2025-06-07 14:28:57,276 - INFO - ============================================================
+2025-06-07 14:28:57,278 - INFO - 
+Comparison with State-of-the-Art Methods:
+2025-06-07 14:28:57,278 - INFO - 
+Systolic BP Estimation Comparison:
+2025-06-07 14:28:57,278 - INFO - Method                    RMSE       R²         Within 5mmHg    Reference                     
+2025-06-07 14:28:57,278 - INFO - ------------------------------------------------------------------------------------------
+2025-06-07 14:28:57,278 - INFO - Clinical Oscillometric Devices 8.00       0.60       58.0            AAMI standards & commercial devices (IEEE JBHI 2021)
+2025-06-07 14:28:57,278 - INFO - PPG-Based Methods         10.20      0.55       45.0            Liang et al. (IEEE TBME 2022) 
+2025-06-07 14:28:57,279 - INFO - ECG-Based Methods         9.10       0.62       48.0            Slapničar et al. (IEEE Access 2021)
+2025-06-07 14:28:57,279 - INFO - ML on Clinical Variables  11.50      0.50       40.0            Miao et al. (IEEE JBHI 2020)  
+2025-06-07 14:28:57,279 - INFO - Our eICU Method           7.84       0.84       49.7            This study                    
+2025-06-07 14:28:57,279 - INFO - 
+Diastolic BP Estimation Comparison:
+2025-06-07 14:28:57,279 - INFO - Method                    RMSE       R²         Within 5mmHg    Reference                     
+2025-06-07 14:28:57,279 - INFO - ------------------------------------------------------------------------------------------
+2025-06-07 14:28:57,279 - INFO - Clinical Oscillometric Devices 6.50       0.65       62.0            AAMI standards & commercial devices (IEEE JBHI 2021)
+2025-06-07 14:28:57,279 - INFO - PPG-Based Methods         7.80       0.60       51.0            Liang et al. (IEEE TBME 2022) 
+2025-06-07 14:28:57,279 - INFO - ECG-Based Methods         6.50       0.67       56.0            Slapničar et al. (IEEE Access 2021)
+2025-06-07 14:28:57,279 - INFO - ML on Clinical Variables  8.00       0.55       45.0            Miao et al. (IEEE JBHI 2020)  
+2025-06-07 14:28:57,279 - INFO - Our eICU Method           9.31       0.32       43.9            This study                    
+2025-06-07 14:28:57,279 - INFO - 
+Interpretation for Publication:
+2025-06-07 14:28:57,280 - INFO - Our method improves SBP RMSE by 2.0% compared to the best literature method.
+2025-06-07 14:28:57,280 - INFO - Our method demonstrates competitive performance compared with existing approaches.
+2025-06-07 14:29:00,088 - INFO - 
+================================================================================
+2025-06-07 14:29:00,088 - INFO - INTERNAL vs EXTERNAL VALIDATION COMPARISON
+2025-06-07 14:29:00,088 - INFO - ================================================================================
+2025-06-07 14:29:00,089 - INFO - BP    MIMIC RMSE   eICU RMSE    Change %   MIMIC R²   eICU R²    R² Change % 
+2025-06-07 14:29:00,089 - INFO - --------------------------------------------------------------------------------
+2025-06-07 14:29:00,089 - INFO - SBP   6.03         7.84         30.2       0.8612     0.8445     -1.9        
+2025-06-07 14:29:00,089 - INFO - DBP   7.13         9.31         30.6       0.4909     0.3192     -35.0       
+2025-06-07 14:29:00,089 - INFO - 
+GENERALIZABILITY ASSESSMENT:
+2025-06-07 14:29:00,089 - INFO - ⚠ SBP model shows reduced generalizability (RMSE change >= 20%)
+2025-06-07 14:29:00,089 - INFO - ⚠ DBP model shows reduced generalizability (RMSE change >= 30%)
+2025-06-07 14:29:00,089 - INFO - ================================================================================
+2025-06-07 14:29:00,089 - INFO - 
+================================================================================
+2025-06-07 14:29:00,089 - INFO - FINAL RESULTS SUMMARY FOR IEEE PUBLICATION
+2025-06-07 14:29:00,089 - INFO - ================================================================================
+2025-06-07 14:29:00,089 - INFO - 
+INTERNAL VALIDATION (MIMIC-III):
+2025-06-07 14:29:00,089 - INFO -   SBP: RMSE = 6.03 mmHg, R² = 0.8612, Within 5mmHg = 57.0%
+2025-06-07 14:29:00,090 - INFO -   DBP: RMSE = 7.13 mmHg, R² = 0.4909, Within 5mmHg = 55.7%
+2025-06-07 14:29:00,090 - INFO -   BHS Grade: SBP = B, DBP = B
+2025-06-07 14:29:00,090 - INFO - 
+EXTERNAL VALIDATION (eICU):
+2025-06-07 14:29:00,090 - INFO -   SBP: RMSE = 7.84 mmHg, R² = 0.8445, Within 5mmHg = 49.7%
+2025-06-07 14:29:00,090 - INFO -   DBP: RMSE = 9.31 mmHg, R² = 0.3192, Within 5mmHg = 43.9%
+2025-06-07 14:29:00,090 - INFO - 
+METHODOLOGICAL STRENGTHS:
+2025-06-07 14:29:00,090 - INFO -   ✓ No data leakage - verification features removed
+2025-06-07 14:29:00,090 - INFO -   ✓ Robust cross-validation with patient-wise splitting
+2025-06-07 14:29:00,090 - INFO -   ✓ Multiple imputation with sensitivity analysis
+2025-06-07 14:29:00,090 - INFO -   ✓ Uncertainty quantification with prediction intervals
+2025-06-07 14:29:00,090 - INFO -   ✓ External validation on independent dataset
+2025-06-07 14:29:00,090 - INFO -   ✓ Clinical utility metrics and workflow simulation
+2025-06-07 14:29:00,090 - INFO - ================================================================================
+2025-06-07 14:29:00,091 - INFO - Documenting features to results/feature_documentation_20250607_125351.md...
+2025-06-07 14:29:00,091 - INFO - Feature documentation written to results/feature_documentation_20250607_125351.md
+2025-06-07 14:29:00,091 - INFO - Feature documentation created: results/feature_documentation_20250607_125351.md
+2025-06-07 14:29:00,091 - INFO - Pipeline completed successfully!
+2025-06-07 14:29:00,091 - INFO - Results saved in results/ with timestamp 20250607_125351

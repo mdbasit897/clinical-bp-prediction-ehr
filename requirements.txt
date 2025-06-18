@@ -1,0 +1,16 @@
+numpy
+pandas
+google-cloud-bigquery
+scikit-learn
+matplotlib
+seaborn
+scipy
+PyYAML
+joblib
+shap
+xgboost
+scikit-optimize
+missingno
+lightgbm
+catboost
+gcloud

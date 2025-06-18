@@ -1,0 +1,42 @@
+data_extraction:
+  max_patients: 1000
+  project_id: d1namo-ecg-processing
+  use_eicu_validation: true
+evaluation:
+  clinical_utility_metrics: true
+  save_figures: true
+  shap_analysis: true
+  uncertainty_quantification: true
+  workflow_simulation: true
+feature_engineering:
+  create_interaction_features: true
+  create_temporal_features: true
+  extreme_limits:
+    dbp_mean:
+    - 15
+    - 200
+    hr_mean:
+    - 20
+    - 250
+    sbp_mean:
+    - 40
+    - 300
+    spo2_mean:
+    - 50
+    - 100
+    temp_mean:
+    - 80
+    - 110
+imputation:
+  iterative_max_iter: 50
+  knn_neighbors: 5
+  method: iterative
+  perform_sensitivity_analysis: true
+model:
+  bayesian_optimization: true
+  cv_folds: 5
+  enhanced_dbp_modeling: false
+  n_iter: 30
+  random_state: 42
+  stratified_modeling: true
+  use_stacked_ensemble: true
