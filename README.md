@@ -197,21 +197,6 @@ You can customize the pipeline through:
 
 ---
 
-### 🔍 Comparative Analysis
-🏆 **State-of-the-Art Comparison**:
-
-| Method                  | SBP RMSE | R²    | Improvement vs Best |
-|------------------------|----------|-------|---------------------|
-| Our Method (MIMIC-III) | **6.03** | 0.86  | **24.7%↑**          |
-| Clinical Devices       | 8.00     | 0.60  | -                   |
-| PPG-Based              | 10.20    | 0.55  | -                   |
-| ECG-Based              | 9.10     | 0.62  | -                   |
-| ML Clinical Variables  | 11.50    | 0.50  | -                   |
-
-Our method demonstrates:
-- **24.7% better RMSE** than best literature method
-- **80% higher R²** than standard clinical devices
-
 ### 📁 Repository Structure
 
 ### 📄 File Descriptions
