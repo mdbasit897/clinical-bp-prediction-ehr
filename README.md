@@ -409,7 +409,22 @@ The pipeline generates timestamped output files to ensure reproducibility and tr
 
 ***📚 Citation***
 
-**If you use this code in your research, kindly cite:**
+**If you use this work, please cite our paper:**
+
+[![arXiv](https://img.shields.io/badge/arXiv-2507.19530-b31b1b.svg)](https://arxiv.org/pdf/2507.19530)
+
+```bibtex
+@misc{azam_clinical-grade_2025,
+    title = {Clinical-{Grade} {Blood} {Pressure} {Prediction} in {ICU} {Settings}: {An} {Ensemble} {Framework} with {Uncertainty} {Quantification} and {Cross}-{Institutional} {Validation}},
+    shorttitle = {Clinical-{Grade} {Blood} {Pressure} {Prediction} in {ICU} {Settings}},
+    url = {http://arxiv.org/abs/2507.19530},
+    doi = {10.48550/arXiv.2507.19530},
+    urldate = {2025-07-29},
+    publisher = {arXiv},
+    author = {Azam, Md Basit and Singh, Sarangthem Ibotombi},
+    month = jul,
+    year = {2025},
+}
 
 ## 🤝 Contributing
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
