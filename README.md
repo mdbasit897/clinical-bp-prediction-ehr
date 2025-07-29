@@ -15,7 +15,7 @@ Napaam - 784 028, Tezpur, Assam, INDIA
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![DOI](https://img.shields.io/badge/DOI-10.xxxx%2Fxxxx-blue)](
+[![DOI](https://img.shields.io/badge/DOI-10.48550/arXiv.2507.19530-blue)](
 https://doi.org/10.48550/arXiv.2507.19530
 )
 
