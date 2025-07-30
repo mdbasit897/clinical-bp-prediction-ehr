@@ -416,16 +416,14 @@ The pipeline generates timestamped output files to ensure reproducibility and tr
 [![arXiv](https://img.shields.io/badge/arXiv-2507.19530-b31b1b.svg)](https://arxiv.org/pdf/2507.19530)
 
 ```bibtex
-@misc{azam_clinical-grade_2025,
-    title = {Clinical-{Grade} {Blood} {Pressure} {Prediction} in {ICU} {Settings}: {An} {Ensemble} {Framework} with {Uncertainty} {Quantification} and {Cross}-{Institutional} {Validation}},
-    shorttitle = {Clinical-{Grade} {Blood} {Pressure} {Prediction} in {ICU} {Settings}},
-    url = {http://arxiv.org/abs/2507.19530},
-    doi = {10.48550/arXiv.2507.19530},
-    urldate = {2025-07-29},
-    publisher = {arXiv},
-    author = {Azam, Md Basit and Singh, Sarangthem Ibotombi},
-    month = jul,
-    year = {2025},
+@misc{azam2025clinicalgradebloodpressureprediction,
+      title={Clinical-Grade Blood Pressure Prediction in ICU Settings: An Ensemble Framework with Uncertainty Quantification and Cross-Institutional Validation}, 
+      author={Md Basit Azam and Sarangthem Ibotombi Singh},
+      year={2025},
+      eprint={2507.19530},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2507.19530}, 
 }
 ```
 
